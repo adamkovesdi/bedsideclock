@@ -1,5 +1,7 @@
 /************************************************************************* 
  * adamkov RESET ESP CONFIG
+ * in case WiFi crashes (exception 29 on mine)
+ * reference: https://github.com/esp8266/Arduino/issues/1648
  * (c) 2018-2019
  *************************************************************************/
 

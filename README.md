@@ -1,4 +1,4 @@
-# Simple bedside clock
+# ESP8266 based small NTP clock
 
 ![bedsideclock](images/bedsideclock.jpg)
 
@@ -6,13 +6,13 @@
 - 24 hour time display
 - NTP sync
 - DST support (automatic change)
-- Configurable over WiFiManager automatic config mode AP
+- Configurable over WiFiManager softAP config
 - OTA upgradable firmware
 
 ## Prerequisites
 - ESP8266 board (recommended: NodeMCU/compatible see BOM)
 - TM1637 4 digit 7 segment display 
-- Platformio
+- [PlatformIO](https://platformio.org)
 
 ## Build & Installation HOWTO
 
@@ -28,44 +28,36 @@
 NodeMCU 3.3V -> Display Vcc
 NodeMCU GND  -> Display GND
 NodeMCU D3   -> Display CLK
-NodeMCU D4   -> Display DATA
+NodeMCU D4   -> Display DIO
 ```
 
 ### Software installation
 
-*OBSOLETE* will be replaced by Platformio HOWTO
+- Download and install [PlatformIO](https://platformio.org)
+- Optionally read https://docs.platformio.org/en/latest/quickstart.html
 
-- Download & Install Arduino IDE (1.8.8 at the time of writing)
-[https://www.arduino.cc/en/main/software](https://www.arduino.cc/en/main/software) 
+PlatformIO automatically downloads all required libraries, boards, and configures your environment.
 
 ### Uploading
 
-*OBSOLETE* will be replaced by Platformio HOWTO
-
-- Tools, Board: select NodeMCU 1.0 (ESP 12-E Module)
-- Tools, Port: select COM port
-- Click upload (arrow button below menu bar on the upper left)
-
-Upload parameters (tested with Arduino IDE 1.8.8):
+PlatformIO serial
 ```
-Board: "NodeMCU 1.0 (ESP-12E Module)"
-Upload Speed: "115200"
-CPU Frequency: "80MHz"
-Flash Size: "4M (1M SPIFFS)"
-Debug: Disabled, None
-IwIP Variant: "v2 Lower Memory"
-VTables: "Flash"
-Erase Flash: "Only Sketch"
+platformio run --target upload
 ```
 
-### Wifi Configuration
+PlatformIO OTA
+```
+platformio run -t upload --upload-port <IP address of ESP>
+```
 
-If unable to connect to a known WiFi AP found, the unit will come up in configuration mode. Connect your PC/smartphone to clockAP SSID and follow captive portal UI to configure your WiFi credentials.
+### WiFi Configuration
+
+If unable to connect to a known WiFi AP, the unit will come up in configuration mode. Connect your PC/smartphone to SSID "clockAP" and follow captive portal UI to configure your WiFi credentials. Upon successful connnection to your WiFi, clock will remember credentials.
 
 ## Future plans
 
 - Force configuration mode (button/jumper, etc)
-- Openweathermap data (?)
+- Openweathermap (?)
 
 ## Special thanks
 
