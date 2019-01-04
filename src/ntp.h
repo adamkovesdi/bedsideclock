@@ -9,11 +9,10 @@
 #ifndef NTP_H
 #define	NTP_H
 
-#include "IPAddress.h"
-#include "WiFiUdp.h"
+#include <IPAddress.h>
+#include <WiFiUdp.h>
 #include <stdint.h>
 #include <Time.h>
-
 
 class NTP
 {
