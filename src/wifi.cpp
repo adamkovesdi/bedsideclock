@@ -1,6 +1,7 @@
 /********************************************
- * WifiManager code
+ * WifiManager code with FS parameters (unused yet)
  * based on tzapu's filesystem code
+ * https://github.com/tzapu/WiFiManager
  ********************************************/
 
 #include <FS.h>
@@ -29,13 +30,12 @@ void saveConfigCallback () {
 }
 
 void setupWiFi() {
-  //read configuration from FS json
+  // read configuration from FS json
   Serial.println("mounting FS...");
-
   if (SPIFFS.begin()) {
     Serial.println("mounted file system");
     if (SPIFFS.exists("/config.json")) {
-      //file exists, reading and loading
+      // file exists, reading and loading
       Serial.println("reading config file");
       File configFile = SPIFFS.open("/config.json", "r");
       if (configFile) {
@@ -68,24 +68,24 @@ void setupWiFi() {
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
-  WiFiManagerParameter custom_cityid("cityid", "City ID", cityid, CITYID_LEN);
-  WiFiManagerParameter custom_apitoken("apitoken", "Openweathermap API token", apitoken, APITOKEN_LEN);
+	WiFiManagerParameter custom_cityid("cityid", "City ID", cityid, CITYID_LEN);
+	WiFiManagerParameter custom_apitoken("apitoken", "Openweathermap API token", apitoken, APITOKEN_LEN);
 
-  //WiFiManager
-  //Local intialization. Once its business is done, there is no need to keep it around
+  // WiFiManager
+  // Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
 
-  //set config save notify callback
+  // set config save notify callback
   wifiManager.setSaveConfigCallback(saveConfigCallback);
 
-  //set static ip
+  // set static ip
   // wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
   
   //add all your parameters here
   wifiManager.addParameter(&custom_cityid);
   wifiManager.addParameter(&custom_apitoken);
 
-  if (!wifiManager.autoConnect("clock-configAP")) {
+  if (!wifiManager.autoConnect("clockAP")) {
     Serial.println("failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
@@ -96,12 +96,12 @@ void setupWiFi() {
   //if you get here you have connected to the WiFi
   Serial.println("connected...yeey :)");
 
-  //read updated parameters
+  // read updated parameters
   strcpy(cityid, custom_cityid.getValue());
   strcpy(apitoken, custom_apitoken.getValue());
 
-  //save the custom parameters to FS
-  if (shouldSaveConfig) {
+  // save the custom parameters to FS
+  if (shouldSaveConfig && false) {
     Serial.println("saving config");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();

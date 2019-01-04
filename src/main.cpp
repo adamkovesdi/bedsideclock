@@ -63,11 +63,15 @@ void setup() {
 	clockticker.attach(0.5, toggleColon);
 }
 
-void loop() {
-	if (updateTime){
+void loop()
+{
+	if (updateTime)
+	{
 		updateTime = false;
 		if (timeStatus() != timeNotSet) 
+		{
 			digitalClockDisplay();  
+		}
 	}
 	ArduinoOTA.handle();
 }
