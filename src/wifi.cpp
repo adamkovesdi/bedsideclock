@@ -1,69 +1,124 @@
+/********************************************
+ * WifiManager code
+ * based on tzapu's filesystem code
+ ********************************************/
 
+#include <FS.h>
 #include <ESP8266WiFi.h>
-#include <ArduinoOTA.h>
-#include <WiFiUdp.h>
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
+#include <ArduinoJson.h> // https://github.com/bblanchon/ArduinoJson
 #include "wifi.h"
 
-void readLine(char buffer[], uint8_t size)
-{
-	uint8_t i = 0;
-	char c;
+#define CONFIGAP_SSID
+#define CITYID_LEN		40
+#define APITOKEN_LEN	40
 
-	do {
-		while (!Serial.available()){yield();} //wait for input
-		c = Serial.read();
-		Serial.write(c); //echo characters back to user.
-		if (c == '\r') break;
-		if (c != '\n')
-			buffer[i++] = c;      
-	} while (i < size-1);
-	buffer[i] = '\0';
+//define your default values here, if there are different values in config.json, they are overwritten.
+char cityid[CITYID_LEN];
+char apitoken[APITOKEN_LEN] = "your_apitoken";
+
+//flag for saving data
+bool shouldSaveConfig = false;
+
+//callback notifying us of the need to save config
+void saveConfigCallback () {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
 }
 
-void setupWiFi(void)
-{
-	WiFi.setAutoConnect(true);
-	WiFi.mode(WIFI_STA);
-}
+void setupWiFi() {
+  //read configuration from FS json
+  Serial.println("mounting FS...");
 
-bool startWiFi(void)
-{
-	uint8_t i;
-	//check for persistent wifi connection
-	for (i=0;i<10;i++){
-		if (WiFi.status() == WL_CONNECTED) return true;
-		delay(500);
-		Serial.print(".");
-	}
+  if (SPIFFS.begin()) {
+    Serial.println("mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
 
-	/*didn't work: so ask user to enter credentials over Serial Port */
-#define maxSSIDlength 20
-#define maxPASSlength 40
-	char ssid[maxSSIDlength];
-	char pass[maxPASSlength];
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        if (json.success()) {
+          Serial.println("\nparsed json");
 
-	//prompt the user for his ssid
+          strcpy(cityid, json["cityid"]);
+          strcpy(apitoken, json["apitoken"]);
 
-	Serial.print("Enter ssid name: ");
-	readLine(ssid, maxSSIDlength);
-	Serial.println();
-	Serial.print("Enter pass phrase: ");
-	readLine(pass, maxPASSlength);
-	Serial.println();
+        } else {
+          Serial.println("failed to load json config");
+        }
+        configFile.close();
+      }
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
+  //end read
 
-	Serial.print("Attempting to Connect");
-	if (WiFi.begin(ssid, pass) != WL_CONNECTED) {
-		for (i=0;i<20;i++){
-			if (WiFi.status() == WL_CONNECTED) return true;
-			delay(500);
-			Serial.print(".");
-		}
-	}
-	Serial.print("Failed to connect to: ");
-	Serial.println(ssid);
+  // The extra parameters to be configured (can be either global or just in the setup)
+  // After connecting, parameter.getValue() will get you the configured value
+  // id/name placeholder/prompt default length
+  WiFiManagerParameter custom_cityid("cityid", "City ID", cityid, CITYID_LEN);
+  WiFiManagerParameter custom_apitoken("apitoken", "Openweathermap API token", apitoken, APITOKEN_LEN);
 
-	Serial.print("using pass phrase: ");
-	Serial.println(pass);
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
 
-	return false;
+  //set config save notify callback
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
+
+  //set static ip
+  // wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
+  
+  //add all your parameters here
+  wifiManager.addParameter(&custom_cityid);
+  wifiManager.addParameter(&custom_apitoken);
+
+  if (!wifiManager.autoConnect("clock-configAP")) {
+    Serial.println("failed to connect and hit timeout");
+    delay(3000);
+    //reset and try again, or maybe put it to deep sleep
+    ESP.reset();
+    delay(5000);
+  }
+
+  //if you get here you have connected to the WiFi
+  Serial.println("connected...yeey :)");
+
+  //read updated parameters
+  strcpy(cityid, custom_cityid.getValue());
+  strcpy(apitoken, custom_apitoken.getValue());
+
+  //save the custom parameters to FS
+  if (shouldSaveConfig) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["cityid"] = cityid;
+    json["apitoken"] = apitoken;
+
+    File configFile = SPIFFS.open("/config.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open config file for writing");
+    }
+
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    //end save
+  }
+
+  Serial.println("local ip");
+  Serial.println(WiFi.localIP());
 }

@@ -44,23 +44,21 @@ void setup() {
 	Serial.println();
 	Serial.println();
 
-	setupWiFi();
-
+	// Until WiFi is connected display 8008
 	display.setBrightness(2);
 	display.writeTime(80,8,1);
 
-	while (!startWiFi()){delay(1500);}
+	setupWiFi();
 
+	// Once WiFi is connected display 0001
 	display.writeTime(0,1,0);
-	Serial.println("WiFi connected");
-	Serial.println("IP address: ");
-	Serial.println(WiFi.localIP());
 
 	ArduinoOTA.begin(); 
 
 	NTPclient.begin("hu.pool.ntp.org", CET);
 	setSyncInterval(SECS_PER_HOUR);
 	setSyncProvider(getNTPtime);
+	// Once NTP sync is setup display 0002
 	display.writeTime(0,2,0);
 	clockticker.attach(0.5, toggleColon);
 }
